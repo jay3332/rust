@@ -35,7 +35,7 @@ def print_debug(s):
     """Print something if DEBUG_OUTPUT is True"""
     global DEBUG_OUTPUT
     if DEBUG_OUTPUT:
-        print("DEBUG: " + str(s))
+        print(f"DEBUG: {str(s)}")
 
 
 def normalize_whitespace(s):
@@ -49,7 +49,7 @@ def breakpoint_callback(frame, bp_loc, dict):
 
     # HACK(eddyb) print a newline to avoid continuing an unfinished line.
     print("")
-    print("Hit breakpoint " + str(bp_loc))
+    print(f"Hit breakpoint {str(bp_loc)}")
 
     # Select the frame and the thread containing it
     frame.thread.process.SetSelectedThread(frame.thread)
@@ -89,8 +89,10 @@ def execute_command(command_interpreter, command):
             breakpoint_id = new_breakpoints.pop()
 
             if breakpoint_id in registered_breakpoints:
-                print_debug("breakpoint with id %s is already registered. Ignoring." %
-                            str(breakpoint_id))
+                print_debug(
+                    f"breakpoint with id {str(breakpoint_id)} is already registered. Ignoring."
+                )
+
             else:
                 print_debug("registering breakpoint callback, id = " + str(breakpoint_id))
                 callback_command = ("breakpoint command add -F breakpoint_callback " +
@@ -116,14 +118,16 @@ def start_breakpoint_listener(target):
         event = lldb.SBEvent()
         try:
             while True:
-                if listener.WaitForEvent(120, event):
-                    if lldb.SBBreakpoint.EventIsBreakpointEvent(event) and \
-                            lldb.SBBreakpoint.GetBreakpointEventTypeFromEvent(event) == \
-                            lldb.eBreakpointEventTypeAdded:
-                        global new_breakpoints
-                        breakpoint = lldb.SBBreakpoint.GetBreakpointFromEvent(event)
-                        print_debug("breakpoint added, id = " + str(breakpoint.id))
-                        new_breakpoints.append(breakpoint.id)
+                if (
+                    listener.WaitForEvent(120, event)
+                    and lldb.SBBreakpoint.EventIsBreakpointEvent(event)
+                    and lldb.SBBreakpoint.GetBreakpointEventTypeFromEvent(event)
+                    == lldb.eBreakpointEventTypeAdded
+                ):
+                    global new_breakpoints
+                    breakpoint = lldb.SBBreakpoint.GetBreakpointFromEvent(event)
+                    print_debug("breakpoint added, id = " + str(breakpoint.id))
+                    new_breakpoints.append(breakpoint.id)
         except:
             print_debug("breakpoint listener shutting down")
 

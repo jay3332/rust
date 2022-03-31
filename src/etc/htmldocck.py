@@ -288,7 +288,7 @@ def flatten(node):
 def normalize_xpath(path):
     path = path.replace("{{channel}}", channel)
     if path.startswith('//'):
-        return '.' + path  # avoid warnings
+        return f'.{path}'
     elif path.startswith('.//'):
         return path
     else:
@@ -391,7 +391,7 @@ def check_tree_text(tree, path, pat, regexp):
                 if ret:
                     break
     except Exception:
-        print('Failed to get path "{}"'.format(path))
+        print(f'Failed to get path "{path}"')
         raise
     return ret
 
@@ -403,7 +403,7 @@ def get_tree_count(tree, path):
 
 def check_snapshot(snapshot_name, tree, normalize_to_text):
     assert rust_test_path.endswith('.rs')
-    snapshot_path = '{}.{}.{}'.format(rust_test_path[:-3], snapshot_name, 'html')
+    snapshot_path = f'{rust_test_path[:-3]}.{snapshot_name}.html'
     try:
         with open(snapshot_path, 'r') as snapshot_file:
             expected_str = snapshot_file.read()
@@ -413,10 +413,11 @@ def check_snapshot(snapshot_name, tree, normalize_to_text):
         else:
             raise FailedCheck('No saved snapshot value')
 
-    if not normalize_to_text:
-        actual_str = ET.tostring(tree).decode('utf-8')
-    else:
-        actual_str = flatten(tree)
+    actual_str = (
+        flatten(tree)
+        if normalize_to_text
+        else ET.tostring(tree).decode('utf-8')
+    )
 
     if expected_str != actual_str:
         if bless:
@@ -442,7 +443,7 @@ def stderr(*args):
 def print_err(lineno, context, err, message=None):
     global ERR_COUNT
     ERR_COUNT += 1
-    stderr("{}: {}".format(lineno, message or err))
+    stderr(f"{lineno}: {message or err}")
     if message and err:
         stderr("\t{}".format(err))
 
@@ -456,7 +457,7 @@ ERR_COUNT = 0
 def check_command(c, cache):
     try:
         cerr = ""
-        if c.cmd == 'has' or c.cmd == 'matches':  # string test
+        if c.cmd in ['has', 'matches']:  # string test
             regexp = (c.cmd == 'matches')
             if len(c.args) == 1 and not regexp:  # @has <path> = file existence
                 try:
@@ -487,10 +488,10 @@ def check_command(c, cache):
             if len(c.args) == 3:  # @count <path> <pat> <count> = count test
                 expected = int(c.args[2])
                 found = get_tree_count(cache.get_tree(c.args[0]), c.args[1])
-                cerr = "Expected {} occurrences but found {}".format(expected, found)
+                cerr = f"Expected {expected} occurrences but found {found}"
                 ret = expected == found
             else:
-                raise InvalidCheck('Invalid number of @{} arguments'.format(c.cmd))
+                raise InvalidCheck(f'Invalid number of @{c.cmd} arguments')
 
         elif c.cmd == 'snapshot':  # snapshot test
             if len(c.args) == 3:  # @snapshot <snapshot-name> <html-path> <xpath>
@@ -516,7 +517,7 @@ def check_command(c, cache):
                 else:
                     raise FailedCheck('Expected 1 match, but found {}'.format(len(subtrees)))
             else:
-                raise InvalidCheck('Invalid number of @{} arguments'.format(c.cmd))
+                raise InvalidCheck(f'Invalid number of @{c.cmd} arguments')
 
         elif c.cmd == 'has-dir':  # has-dir test
             if len(c.args) == 1:  # @has-dir <path> = has-dir test
@@ -536,7 +537,7 @@ def check_command(c, cache):
             raise InvalidCheck('Unimplemented @valid-links')
 
         else:
-            raise InvalidCheck('Unrecognized @{}'.format(c.cmd))
+            raise InvalidCheck(f'Unrecognized @{c.cmd}')
 
         if ret == c.negated:
             raise FailedCheck(cerr)
@@ -556,7 +557,7 @@ def check(target, commands):
 
 if __name__ == '__main__':
     if len(sys.argv) not in [3, 4]:
-        stderr('Usage: {} <doc dir> <template> [--bless]'.format(sys.argv[0]))
+        stderr(f'Usage: {sys.argv[0]} <doc dir> <template> [--bless]')
         raise SystemExit(1)
 
     rust_test_path = sys.argv[2]

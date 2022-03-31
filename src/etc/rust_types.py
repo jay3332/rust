@@ -102,10 +102,7 @@ def classify_union(fields):
 
     first_variant_name = fields[0].name
     if first_variant_name is None:
-        if len(fields) == 1:
-            return RustType.SINGLETON_ENUM
-        else:
-            return RustType.REGULAR_ENUM
+        return RustType.SINGLETON_ENUM if len(fields) == 1 else RustType.REGULAR_ENUM
     elif first_variant_name.startswith(ENCODED_ENUM_PREFIX):
         assert len(fields) == 1
         return RustType.COMPRESSED_ENUM
