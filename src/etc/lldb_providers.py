@@ -125,7 +125,7 @@ class EmptySyntheticProvider:
 
 def SizeSummaryProvider(valobj, dict):
     # type: (SBValue, dict) -> str
-    return 'size=' + str(valobj.GetNumChildren())
+    return f'size={str(valobj.GetNumChildren())}'
 
 
 def vec_to_string(vec):
@@ -238,10 +238,7 @@ class TupleSyntheticProvider:
 
     def get_child_index(self, name):
         # type: (str) -> int
-        if name.isdigit():
-            return int(name)
-        else:
-            return -1
+        return int(name) if name.isdigit() else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
@@ -285,17 +282,15 @@ class StdVecSyntheticProvider:
     def get_child_index(self, name):
         # type: (str) -> int
         index = name.lstrip('[').rstrip(']')
-        if index.isdigit():
-            return int(index)
-        else:
-            return -1
+        return int(index) if index.isdigit() else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
         start = self.data_ptr.GetValueAsUnsigned()
         address = start + index * self.element_type_size
-        element = self.data_ptr.CreateValueFromAddress("[%s]" % index, address, self.element_type)
-        return element
+        return self.data_ptr.CreateValueFromAddress(
+            f"[{index}]", address, self.element_type
+        )
 
     def update(self):
         # type: () -> None
@@ -324,17 +319,15 @@ class StdSliceSyntheticProvider:
     def get_child_index(self, name):
         # type: (str) -> int
         index = name.lstrip('[').rstrip(']')
-        if index.isdigit():
-            return int(index)
-        else:
-            return -1
+        return int(index) if index.isdigit() else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
         start = self.data_ptr.GetValueAsUnsigned()
         address = start + index * self.element_type_size
-        element = self.data_ptr.CreateValueFromAddress("[%s]" % index, address, self.element_type)
-        return element
+        return self.data_ptr.CreateValueFromAddress(
+            f"[{index}]", address, self.element_type
+        )
 
     def update(self):
         # type: () -> None
@@ -378,8 +371,9 @@ class StdVecDequeSyntheticProvider:
         # type: (int) -> SBValue
         start = self.data_ptr.GetValueAsUnsigned()
         address = start + ((index + self.tail) % self.cap) * self.element_type_size
-        element = self.data_ptr.CreateValueFromAddress("[%s]" % index, address, self.element_type)
-        return element
+        return self.data_ptr.CreateValueFromAddress(
+            f"[{index}]", address, self.element_type
+        )
 
     def update(self):
         # type: () -> None
@@ -423,10 +417,7 @@ class StdOldHashMapSyntheticProvider:
     def get_child_index(self, name):
         # type: (str) -> int
         index = name.lstrip('[').rstrip(']')
-        if index.isdigit():
-            return int(index)
-        else:
-            return -1
+        return int(index) if index.isdigit() else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
@@ -447,12 +438,16 @@ class StdOldHashMapSyntheticProvider:
         table_index = self.valid_indices[index]
         idx = table_index & self.capacity_mask
         address = pairs_start + idx * self.pair_type_size
-        element = self.data_ptr.CreateValueFromAddress("[%s]" % index, address, self.pair_type)
+        element = self.data_ptr.CreateValueFromAddress(
+            f"[{index}]", address, self.pair_type
+        )
+
         if self.show_values:
             return element
-        else:
-            key = element.GetChildAtIndex(0)
-            return self.valobj.CreateValueFromData("[%s]" % index, key.GetData(), key.GetType())
+        key = element.GetChildAtIndex(0)
+        return self.valobj.CreateValueFromData(
+            f"[{index}]", key.GetData(), key.GetType()
+        )
 
     def update(self):
         # type: () -> None
@@ -476,8 +471,10 @@ class StdOldHashMapSyntheticProvider:
         self.valid_indices = []
         for idx in range(self.capacity):
             address = self.data_ptr.GetValueAsUnsigned() + idx * self.hash_uint_size
-            hash_uint = self.data_ptr.CreateValueFromAddress("[%s]" % idx, address,
-                                                             self.hash_uint_type)
+            hash_uint = self.data_ptr.CreateValueFromAddress(
+                f"[{idx}]", address, self.hash_uint_type
+            )
+
             hash_ptr = hash_uint.GetChildAtIndex(0).GetChildAtIndex(0)
             if hash_ptr.GetValueAsUnsigned() != 0:
                 self.valid_indices.append(idx)
@@ -505,10 +502,7 @@ class StdHashMapSyntheticProvider:
     def get_child_index(self, name):
         # type: (str) -> int
         index = name.lstrip('[').rstrip(']')
-        if index.isdigit():
-            return int(index)
-        else:
-            return -1
+        return int(index) if index.isdigit() else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
@@ -517,12 +511,16 @@ class StdHashMapSyntheticProvider:
         if self.new_layout:
             idx = -(idx + 1)
         address = pairs_start + idx * self.pair_type_size
-        element = self.data_ptr.CreateValueFromAddress("[%s]" % index, address, self.pair_type)
+        element = self.data_ptr.CreateValueFromAddress(
+            f"[{index}]", address, self.pair_type
+        )
+
         if self.show_values:
             return element
-        else:
-            key = element.GetChildAtIndex(0)
-            return self.valobj.CreateValueFromData("[%s]" % index, key.GetData(), key.GetType())
+        key = element.GetChildAtIndex(0)
+        return self.valobj.CreateValueFromData(
+            f"[{index}]", key.GetData(), key.GetType()
+        )
 
     def update(self):
         # type: () -> None
@@ -550,8 +548,10 @@ class StdHashMapSyntheticProvider:
         self.valid_indices = []
         for idx in range(capacity):
             address = ctrl.GetValueAsUnsigned() + idx * u8_type_size
-            value = ctrl.CreateValueFromAddress("ctrl[%s]" % idx, address,
-                                                u8_type).GetValueAsUnsigned()
+            value = ctrl.CreateValueFromAddress(
+                f"ctrl[{idx}]", address, u8_type
+            ).GetValueAsUnsigned()
+
             is_present = value & 128 == 0
             if is_present:
                 self.valid_indices.append(idx)
@@ -576,7 +576,7 @@ def StdRcSummaryProvider(valobj, dict):
     # type: (SBValue, dict) -> str
     strong = valobj.GetChildMemberWithName("strong").GetValueAsUnsigned()
     weak = valobj.GetChildMemberWithName("weak").GetValueAsUnsigned()
-    return "strong={}, weak={}".format(strong, weak)
+    return f"strong={strong}, weak={weak}"
 
 
 class StdRcSyntheticProvider:
@@ -662,15 +662,11 @@ class StdCellSyntheticProvider:
 
     def get_child_index(self, name):
         # type: (str) -> int
-        if name == "value":
-            return 0
-        return -1
+        return 0 if name == "value" else -1
 
     def get_child_at_index(self, index):
         # type: (int) -> SBValue
-        if index == 0:
-            return self.value
-        return None
+        return self.value if index == 0 else None
 
     def update(self):
         # type: () -> None
@@ -684,7 +680,7 @@ class StdCellSyntheticProvider:
 def StdRefSummaryProvider(valobj, dict):
     # type: (SBValue, dict) -> str
     borrow = valobj.GetChildMemberWithName("borrow").GetValueAsSigned()
-    return "borrow={}".format(borrow) if borrow >= 0 else "borrow_mut={}".format(-borrow)
+    return f"borrow={borrow}" if borrow >= 0 else f"borrow_mut={-borrow}"
 
 
 class StdRefSyntheticProvider:
